@@ -131,6 +131,11 @@ const NavBar = () => {
 			</Nav>
 			<Overlay open={toggle}>
 				<OverlayMenu open={toggle}>
+					<Logo>
+						<Link exact to="/">
+							Yodlr Design Challenge
+						</Link>
+					</Logo>
 					<Item>
 						<Link exact to="/register">
 							Registration Page

@@ -1,6 +1,8 @@
 import styled from "styled-components";
 import {useState,useEffect} from 'react';
 import axios from 'axios';
+import User from './User';
+import {URL} from '../conf';
 
 const Container = styled.div`
 	margin: 0px auto;
@@ -40,64 +42,112 @@ const CustomTable = styled.table`
   }
 `;
 
-const Input = styled.input`
-  padding: 10px;
-  width:100%;
+const MessContainer = styled.div`
+	display: flex;
+	box-sizing: border-box;
+	padding-top: 5px;
+	-ms-flex-pack: center;
+  	justify-content: center;
 `;
 
-const IconContainer = styled.td`
-  text-align: center;
+const Message = styled.p`
+  color: red;
 `;
-
-const Icon = styled.i`
-  cursor: pointer;
-  :hover {
-    color: #3b5998;
-  }
-
-`
 
 const Users = () => {
   const [users,setUsers] = useState([]);
+  const [deleted, setDeleted] = useState(false);
+  const [edited, setEdited] = useState(false);
 
   const fetchUsers = () => {
-	  axios.get('http://localhost:3000/users')
+	  axios.get(URL)
 	  .then((response)=>{
 		  const allUsers = response.data;
+		  console.log(response);
           setUsers(allUsers)
 	  })
 	  .catch(error=> console.log(error));
   }
+
+  const handleDelete= (id) => {
+	  axios.delete(`${URL}/${id}`)
+	  .then((response)=>{
+		  const user = response.data;
+          console.log(user);
+		  setUsers(users.filter(user=>user.id!==id));
+		  setDeleted(true);
+	  })
+	  .catch(error=> console.log(error));
+  }
+
+	const handleEdit = (formData,id) => {
+		const userData = {...formData,id}
+		axios.put(`${URL}/${id}`,userData)
+	  	.then((response)=>{
+			setUsers(users=>users.map(user=>user.id===id?response.data:user));
+			setEdited(true);
+		})
+		.catch(error=>console.log(error));
+	}
+
+	useEffect(()=>{
+		fetchUsers();
+		console.log(users)
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	},[])
+  
   useEffect(()=>{
-	fetchUsers();
-  },[]);
+	if(deleted){
+		let timer1 = setTimeout(()=>{
+			setDeleted(false);
+		},2000)
+
+		return () => {
+        	clearTimeout(timer1);
+        };
+	}
+	if(edited){
+		let timer2 = setTimeout(()=>{
+			setEdited(false);
+		},2000)
+
+		return () => {
+        	clearTimeout(timer2);
+        };
+	}
+  },[deleted,edited]);
+  
   return (
 	<>
 		<Title>
 			<h1>Users</h1>
 		</Title>
+		<MessContainer>
+			{deleted&&<Message>User has been deleted successfully!</Message>}
+			{edited&&<Message>User has been edited successfully!</Message>}
+		</MessContainer>
 		<Container>
 			<CustomTable>
-			<tr>
-				<th>#</th>
-				<th>Last Name</th>
-				<th>First Name</th>
-				<th>Email</th>
-				<th>Edit</th>
-				<th>Delete?</th>
-			</tr>
-			{Object.values(users).map((user, index) => {
-				return (
-				<tr key={index}>
-					<td>{index+1}</td>
-					<td><Input type="text" width="100%" value={user.lastName}/></td>
-					<td><Input type="text" width="100%" value={user.firstName}/></td>
-					<td><Input type="text" width="100%" value={user.email}/></td>
-					<IconContainer><Icon className="fas fa-edit"></Icon></IconContainer>
-					<IconContainer><Icon className="fas fa-trash-alt"></Icon></IconContainer>
+		    <thead>
+				<tr>
+					<th>#</th>
+					<th>Last Name</th>
+					<th>First Name</th>
+					<th>Email</th>
+					<th>State</th>
+					<th>Edit</th>
+					<th>Delete?</th>
 				</tr>
-				);
-			})}
+			</thead>
+			<tbody>
+				{users.map((user,index) => {
+					return (
+					<tr key={user.id}>
+						<User id={index} user={user} handleDelete={handleDelete} handleEdit={handleEdit}/>
+					</tr>
+					);
+				})}
+			</tbody>
 			</CustomTable>
 		</Container>
 	</>
